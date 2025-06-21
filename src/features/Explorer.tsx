@@ -1,43 +1,72 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import JSZip from "jszip";
-import { type ChangeEvent } from "react";
-
+import {convertMapToRCTree,toRcTreeData} from '../utility/ExplorerUtility'
+import type {RCTree} from '../utility/ExplorerUtility'
+import { type ChangeEvent,useState } from "react";
+import Tree from "rc-tree";
+/**
+ * Explorer component for displaying a file tree structure from a ZIP file.
+ *
+ * - Allows users to upload a ZIP file and parses its contents into a hierarchical tree.
+ * - Uses a recursive function `getFileTree` to build a nested Map representing the file structure.
+ * - Converts the Map structure into a format suitable for rendering with a Tree component.
+ * - Handles both files and directories, distinguishing between them based on the ZIP entry.
+ *
+ * @component
+ *
+ * @example
+ * <Explorer />
+ *
+ * @returns {JSX.Element} The rendered Explorer component with file upload and tree view.
+ */
 const Explorer = () => {
-  // console.log(zip,"zipFileName");
+
+  const [fileTree,setFileTree]=useState<RCTree[]>();
+  /**
+   * Recursively builds a file tree structure from a file path.
+   *
+   * @param file - The file object containing at least a `name` property (path as string).
+   * @param root - The root map representing the file tree, where each key is a directory or file name and the value is an array of child maps.
+   * @param current - The current directory or file name being processed.
+   * @param i - The current index in the split path array.
+   *
+   * @remarks
+   * This function splits the file's name by "/" to traverse or build the nested file tree.
+   * It creates new nodes as needed and attaches file objects at leaf nodes (when not a directory).
+   */
   const getFileTree = (
     file: any,
     root: Map<string, Array<Map<string, any>>>,
     current: string,
     i: number
   ): void => {
-    const getEachNode = file?.name?.split("/");
-    if (i >= getEachNode.length) return;
-    if (!getEachNode || i >= getEachNode.length) return;
+    const getEachNode = file?.name?.split("/"); // you know the file path and the the content
+    if (!getEachNode || i >= getEachNode.length) return; // did not get any / means done there is nothing and i>= means you are done checking
 
-    const toSearch = getEachNode[i];
-    const children: Array<Map<string, any>> = root.get(current) ?? [];
+    const toSearch = getEachNode[i]; //we will check basically if our map have the path
+    const children: Array<Map<string, any>> = root.get(current) ?? []; // get the array of map which is the children array of root
 
     let foundChildMap: Map<string, any> | null = null;
 
-    for (const item of children) {
-      if (item.has(toSearch)) {
-        foundChildMap = item;
+    for (const item of children) { // traverse through it
+      if (item.has(toSearch)) { // get to each map and see if exists
+        foundChildMap = item; 
         break;
       }
     }
-    if (!foundChildMap) {
+    if (!foundChildMap) { // if not found make it
       foundChildMap = new Map<string, any>();
-      if (i === getEachNode.length - 1 && !file.dir) {
+      if (i === getEachNode.length - 1 && !file.dir) { // if file no need to make another map with
         foundChildMap.set(toSearch, file);
-        children.push(foundChildMap);
+        children.push(foundChildMap);// push the file in the children
         root.set(current, children);
         return;
       }
       foundChildMap.set(toSearch, []);
       children.push(foundChildMap);
       root.set(current, children);
-    }
+    }//based on the idea that terminal node do not appear twice
     getFileTree(file, foundChildMap, toSearch, i + 1);
   };
 
@@ -53,15 +82,26 @@ const Explorer = () => {
         getFileTree(fileEntry, root, "root", 0);
       });
     }
+    convertMapToRCTree(root,"root").then((data:any)=>{
+      setFileTree(data);
+    });
 
-    console.log(root);
+    
   };
   return (
     <>
+    <div>
       <label>
         Insert Zip
         <input type="file" accept=".zip" onChange={handleChange} />
       </label>
+      <Tree showIcon={true}
+      showLine={true}
+      draggable={true}
+      treeData={toRcTreeData(fileTree ?? [])}
+      />
+      <p>{}</p>
+      </div>
     </>
   );
 };
