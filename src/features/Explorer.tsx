@@ -42,7 +42,7 @@ const Explorer = () => {
     i: number
   ): void => {
     const getEachNode = file?.name?.split("/"); // you know the file path and the the content
-    if (!getEachNode || i >= getEachNode.length) return; // did not get any / means done there is nothing and i>= means you are done checking
+    if (!getEachNode || i >= getEachNode.length || getEachNode[i]=="") return; // did not get any / means done there is nothing and i>= means you are done checking
 
     const toSearch = getEachNode[i]; //we will check basically if our map have the path
     const children: Array<Map<string, any>> = root.get(current) ?? []; // get the array of map which is the children array of root
@@ -82,6 +82,7 @@ const Explorer = () => {
         getFileTree(fileEntry, root, "root", 0);
       });
     }
+    console.log(root,"root");
     convertMapToRCTree(root,"root").then((data:any)=>{
       setFileTree(data);
     });
@@ -96,8 +97,8 @@ const Explorer = () => {
         <input type="file" accept=".zip" onChange={handleChange} />
       </label>
       <Tree showIcon={true}
-      showLine={true}
-      draggable={true}
+      // showLine={true}
+      // draggable={true}
       treeData={toRcTreeData(fileTree ?? [])}
       />
       <p>{}</p>
